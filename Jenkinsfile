@@ -10,39 +10,28 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube-server') {
-                    script {
-                        // Get the path to the SonarScanner installed in Jenkins Tools
-                        def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-                        sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                                -Dsonar.projectKey=python-sonarqube-pipeline \
-                                -Dsonar.sources=. \
-                                -Dsonar.python.version=3
-                        """
-                    }
+                withSonarQubeEnv('sonarqube-server') { 
+                    sh 'sonar-scanner -Dsonar.projectKey=python-sonarqube-pipeline -Dsonar.sources=. -Dsonar.python.version=3'
                 }
             }
         }
 
-        stage('Quality Gate') {
+        stage('Quality Gate Result') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                    // The pipeline pauses here, waiting for the webhook to deliver the result.
+                    waitForQualityGate abortPipeline: false 
                 }
             }
         }
     }
 
     post {
-        always {
-            echo 'Pipeline execution completed.'
+        success {
+            echo 'Pipeline completed: Quality Gate passed!'
         }
         failure {
-            echo 'Pipeline failed! Check SonarQube quality gate or scanner logs.'
-        }
-        success {
-            echo 'Pipeline passed quality gate successfully.'
+            echo 'Pipeline failed: Quality Gate check returned an error or failed.'
         }
     }
 }
