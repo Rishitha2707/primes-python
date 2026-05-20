@@ -9,12 +9,19 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube-server') {
-                    sh 'sonar-scanner -Dsonar.projectKey=python-sonarqube-pipeline -Dsonar.sources=. -Dsonar.python.version=3'
-                }
-            }
+    steps {
+        withSonarQubeEnv('sonarqube-server') {
+            // Get the path to the sonar-scanner binary
+            def scannerHome = tool name: 'sonar-scanner', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+            sh """
+                ${scannerHome}/bin/sonar-scanner \
+                  -Dsonar.projectKey=python-sonarqube-pipeline \
+                  -Dsonar.sources=. \
+                  -Dsonar.python.version=3
+            """
         }
+    }
+}
 
         stage('Quality Gate') {
             steps {
